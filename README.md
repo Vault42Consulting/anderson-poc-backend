@@ -1,4 +1,4 @@
-# Anderson POC Boot Demo Project
+# Anderson POC Spring Boot Demo Project
 
 Simple Spring Boot application that responds with "OK" at the root endpoint. More to be added.
 
