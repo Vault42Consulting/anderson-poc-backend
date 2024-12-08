@@ -1,6 +1,6 @@
 # Anderson POC Spring Boot Demo Project
 
-Simple Spring Boot application that responds with "OK" at the root endpoint. More to be added.
+Simple Spring Boot application that provides a basic contacts API.
 
 ## Prerequisites
 
@@ -50,13 +50,37 @@ docker build -t spring-demo .
 docker run -p 8080:8080 spring-demo
 ```
 
+## API Endpoints
+
+### Health Check
+
+- `GET /` - Returns "OK"
+
+### Contacts API
+
+- `POST /contact/{userId}` - Create a contact for a specific user
+- `GET /contact/{userId}` - Get all contacts for a specific user
+
+Example contact creation:
+
+```bash
+curl -X POST http://localhost:8080/contact/1 \
+-H "Content-Type: application/json" \
+-d '{
+  "name": "John Smith",
+  "email": "john@example.com",
+  "phone": "555-1234",
+  "twitter": "@johnsmith",
+  "department": "Engineering"
+}'
+```
+
+Note: The contacts API accepts arbitrary JSON fields, making it flexible for different use cases. Currently, contacts are stored in a local JSON file (contacts.json) - this is a temporary solution for the POC phase and will be replaced with proper persistence in a future iteration. The file is ephemeral and resets when the Docker container restarts.
+
 ## Project Structure
 
 - `/src/main/java/com/anderson/demo` - Main application code
 - `/src/test/java/com/anderson/demo` - Test code
 - `Dockerfile` - Docker configuration
 - `pom.xml` - Maven dependencies and build configuration
-
-## Endpoints
-
-- `GET /` - Returns "OK"
+- `contacts.json` - Temporary local storage for contacts (to be replaced with proper persistence)

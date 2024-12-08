@@ -51,3 +51,6 @@ logs/
 ### Local Configuration ###
 application-local.properties
 application-local.yml
+
+### Local Data ###
+contacts.json
