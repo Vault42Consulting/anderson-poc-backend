@@ -1,14 +1,15 @@
-// src/test/java/com/anderson/demo/controller/ContactControllerTest.java
 package com.anderson.demo.controller;
 
 import com.anderson.demo.model.Contact;
 import com.anderson.demo.service.ContactService;
+import com.anderson.demo.service.KafkaEventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -16,6 +17,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -33,6 +35,10 @@ class ContactControllerTest {
 
         @Autowired
         private ContactService contactService;
+
+        // Mock KafkaEventService so we don't need a real Kafka connection
+        @MockBean
+        private KafkaEventService kafkaEventService;
 
         private static final String AUTH_HEADER = "X-Goog-Authenticated-User-Id";
 
@@ -125,8 +131,9 @@ class ContactControllerTest {
                                 .andExpect(status().isOk())
                                 .andReturn();
 
-                String contactId = objectMapper.readValue(result.getResponse().getContentAsString(), Contact.class)
-                                .getId();
+                String contactId = objectMapper.readValue(
+                                result.getResponse().getContentAsString(),
+                                Contact.class).getId();
 
                 // Try to update the contact as user2
                 Map<String, String> updatedContact = new HashMap<>();

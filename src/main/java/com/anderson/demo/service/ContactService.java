@@ -1,6 +1,7 @@
 package com.anderson.demo.service;
 
 import com.anderson.demo.model.Contact;
+import com.anderson.demo.event.ContactEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,11 @@ public class ContactService {
     private List<Contact> contacts;
     private final String JSON_FILE = "contacts.json";
     private final ObjectMapper objectMapper;
+    private final Optional<KafkaEventService> kafkaEventService;
 
-    public ContactService(ObjectMapper objectMapper) {
+    public ContactService(ObjectMapper objectMapper, Optional<KafkaEventService> kafkaEventService) {
         this.objectMapper = objectMapper;
+        this.kafkaEventService = kafkaEventService;
         this.contacts = new ArrayList<>();
     }
 
@@ -52,6 +55,13 @@ public class ContactService {
         contact.setUserId(userId);
         contacts.add(contact);
         saveContacts();
+
+        kafkaEventService.ifPresent(service -> service.sendEvent(new ContactEvent(
+                ContactEvent.Type.CREATED,
+                userId,
+                contact.getId(),
+                contact)));
+
         return contact;
     }
 
@@ -68,13 +78,18 @@ public class ContactService {
 
         if (existingContact.isPresent()) {
             Contact contact = existingContact.get();
-            // Preserve id and userId
             updatedContact.setId(contactId);
             updatedContact.setUserId(userId);
-            // Replace the old contact with the updated one
             contacts.remove(contact);
             contacts.add(updatedContact);
             saveContacts();
+
+            kafkaEventService.ifPresent(service -> service.sendEvent(new ContactEvent(
+                    ContactEvent.Type.UPDATED,
+                    userId,
+                    contactId,
+                    updatedContact)));
+
             return Optional.of(updatedContact);
         }
         return Optional.empty();
@@ -88,6 +103,13 @@ public class ContactService {
         if (contact.isPresent()) {
             contacts.remove(contact.get());
             saveContacts();
+
+            kafkaEventService.ifPresent(service -> service.sendEvent(new ContactEvent(
+                    ContactEvent.Type.DELETED,
+                    userId,
+                    contactId,
+                    contact.get())));
+
             return true;
         }
         return false;
