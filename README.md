@@ -10,14 +10,12 @@ Simple Spring Boot application that provides a basic contacts API.
 ## Setup
 
 1. Install required asdf plugins:
-
 ```bash
 asdf plugin add java
 asdf plugin add maven
 ```
 
 2. Install dependencies (from project root):
-
 ```bash
 asdf install
 ```
@@ -25,7 +23,6 @@ asdf install
 ## Development
 
 Build and run the application:
-
 ```bash
 mvn clean package
 mvn spring-boot:run
@@ -36,7 +33,6 @@ The application will be available at http://localhost:8080
 ## Testing
 
 Run the tests with:
-
 ```bash
 mvn test
 ```
@@ -44,7 +40,6 @@ mvn test
 ## Docker Deployment
 
 Build and run with Docker:
-
 ```bash
 docker build -t spring-demo .
 docker run -p 8080:8080 spring-demo
@@ -53,19 +48,19 @@ docker run -p 8080:8080 spring-demo
 ## API Endpoints
 
 ### Health Check
-
 - `GET /` - Returns "OK"
 
 ### Contacts API
+All contacts endpoints require the `X-Goog-Authenticated-User-Id` header. The value of this header is used as the user identifier for storing and retrieving contacts.
 
-- `POST /contact/{userId}` - Create a contact for a specific user
-- `GET /contact/{userId}` - Get all contacts for a specific user
+- `POST /contact` - Create a contact
+- `GET /contact` - Get all contacts for the authenticated user
 
 Example contact creation:
-
 ```bash
-curl -X POST http://localhost:8080/contact/1 \
+curl -X POST http://localhost:8080/contact \
 -H "Content-Type: application/json" \
+-H "X-Goog-Authenticated-User-Id: user123" \
 -d '{
   "name": "John Smith",
   "email": "john@example.com",
