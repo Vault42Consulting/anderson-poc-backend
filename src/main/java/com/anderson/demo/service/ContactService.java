@@ -30,7 +30,8 @@ public class ContactService {
         File file = new File(JSON_FILE);
         if (file.exists()) {
             try {
-                contacts = objectMapper.readValue(file, new TypeReference<List<Contact>>() {});
+                contacts = objectMapper.readValue(file, new TypeReference<List<Contact>>() {
+                });
             } catch (IOException e) {
                 e.printStackTrace();
                 contacts = new ArrayList<>();
@@ -56,7 +57,39 @@ public class ContactService {
 
     public List<Contact> getContactsByUserId(String userId) {
         return contacts.stream()
-            .filter(contact -> userId.equals(contact.getUserId()))
-            .collect(Collectors.toList());
+                .filter(contact -> userId.equals(contact.getUserId()))
+                .collect(Collectors.toList());
+    }
+
+    public Optional<Contact> updateContact(String userId, String contactId, Contact updatedContact) {
+        Optional<Contact> existingContact = contacts.stream()
+                .filter(c -> c.getId().equals(contactId) && c.getUserId().equals(userId))
+                .findFirst();
+
+        if (existingContact.isPresent()) {
+            Contact contact = existingContact.get();
+            // Preserve id and userId
+            updatedContact.setId(contactId);
+            updatedContact.setUserId(userId);
+            // Replace the old contact with the updated one
+            contacts.remove(contact);
+            contacts.add(updatedContact);
+            saveContacts();
+            return Optional.of(updatedContact);
+        }
+        return Optional.empty();
+    }
+
+    public boolean deleteContact(String userId, String contactId) {
+        Optional<Contact> contact = contacts.stream()
+                .filter(c -> c.getId().equals(contactId) && c.getUserId().equals(userId))
+                .findFirst();
+
+        if (contact.isPresent()) {
+            contacts.remove(contact.get());
+            saveContacts();
+            return true;
+        }
+        return false;
     }
 }

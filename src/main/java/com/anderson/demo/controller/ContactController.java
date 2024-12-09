@@ -1,4 +1,3 @@
-// src/main/java/com/anderson/demo/controller/ContactController.java
 package com.anderson.demo.controller;
 
 import com.anderson.demo.model.Contact;
@@ -31,5 +30,23 @@ public class ContactController {
             @RequestHeader(USER_HEADER) String userId) {
         List<Contact> userContacts = contactService.getContactsByUserId(userId);
         return ResponseEntity.ok(userContacts);
+    }
+
+    @PutMapping("/{contactId}")
+    public ResponseEntity<Contact> updateContact(
+            @RequestHeader(USER_HEADER) String userId,
+            @PathVariable String contactId,
+            @RequestBody Contact contact) {
+        return contactService.updateContact(userId, contactId, contact)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{contactId}")
+    public ResponseEntity<Void> deleteContact(
+            @RequestHeader(USER_HEADER) String userId,
+            @PathVariable String contactId) {
+        boolean deleted = contactService.deleteContact(userId, contactId);
+        return deleted ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 }

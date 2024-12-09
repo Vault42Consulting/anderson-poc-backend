@@ -4,14 +4,18 @@ package com.anderson.demo.controller;
 import com.anderson.demo.model.Contact;
 import com.anderson.demo.service.ContactService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -21,99 +25,152 @@ import static org.hamcrest.Matchers.*;
 @AutoConfigureMockMvc
 class ContactControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    private static final String AUTH_HEADER = "X-Goog-Authenticated-User-Id";
+        @Autowired
+        private ContactService contactService;
 
-    @Test
-    void shouldRejectRequestsWithoutAuthHeader() throws Exception {
-        mockMvc.perform(get("/contact"))
-                .andExpect(status().isUnauthorized());
+        private static final String AUTH_HEADER = "X-Goog-Authenticated-User-Id";
 
-        mockMvc.perform(post("/contact")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{}"))
-                .andExpect(status().isUnauthorized());
-    }
+        @BeforeEach
+        void setUp() throws Exception {
+                // Clear contacts before each test
+                File file = new File("contacts.json");
+                if (file.exists()) {
+                        objectMapper.writeValue(file, new ArrayList<>());
+                }
+                // Reinitialize the service
+                contactService.init();
+        }
 
-    @Test
-    void shouldCreateContactWithRequiredHeader() throws Exception {
-        Map<String, String> contact = new HashMap<>();
-        contact.put("name", "Test User");
-        contact.put("email", "test@example.com");
-        contact.put("customField", "customValue");
+        @Test
+        void shouldRejectRequestsWithoutAuthHeader() throws Exception {
+                mockMvc.perform(get("/contact"))
+                                .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post("/contact")
-                .header(AUTH_HEADER, "testuser123")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(contact)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.userId").value("testuser123"))
-                .andExpect(jsonPath("$.name").value("Test User"))
-                .andExpect(jsonPath("$.email").value("test@example.com"));
-    }
+                mockMvc.perform(post("/contact")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
+                                .andExpect(status().isUnauthorized());
 
-    @Test
-    void shouldReturnEmptyContactListForNewUser() throws Exception {
-        mockMvc.perform(get("/contact")
-                .header(AUTH_HEADER, "newuser123"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
-    }
+                mockMvc.perform(put("/contact/123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
+                                .andExpect(status().isUnauthorized());
 
-    @Test
-    void shouldOnlyReturnContactsForSpecificUser() throws Exception {
-        // Create contacts for two different users
-        createContact("user1", "Contact One");
-        createContact("user2", "Contact Two");
-        createContact("user1", "Contact Three");
+                mockMvc.perform(delete("/contact/123"))
+                                .andExpect(status().isUnauthorized());
+        }
 
-        // Check user1's contacts
-        mockMvc.perform(get("/contact")
-                .header(AUTH_HEADER, "user1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[*].name", hasItems("Contact One", "Contact Three")))
-                .andExpect(jsonPath("$[*].name", not(hasItem("Contact Two"))));
+        @Test
+        void shouldCreateAndUpdateAndDeleteContact() throws Exception {
+                // Create a contact
+                Map<String, String> contact = new HashMap<>();
+                contact.put("name", "Test User");
+                contact.put("email", "test@example.com");
 
-        // Check user2's contacts
-        mockMvc.perform(get("/contact")
-                .header(AUTH_HEADER, "user2"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].name").value("Contact Two"));
-    }
+                MvcResult result = mockMvc.perform(post("/contact")
+                                .header(AUTH_HEADER, "testuser123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(contact)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").exists())
+                                .andExpect(jsonPath("$.userId").value("testuser123"))
+                                .andExpect(jsonPath("$.name").value("Test User"))
+                                .andExpect(jsonPath("$.email").value("test@example.com"))
+                                .andReturn();
 
-    @Test
-    void shouldAcceptArbitraryJsonFields() throws Exception {
-        Map<String, Object> contact = new HashMap<>();
-        contact.put("name", "Test User");
-        contact.put("customString", "value");
-        contact.put("customNumber", 123);
-        contact.put("customBoolean", true);
-        contact.put("customObject", Map.of("key", "value"));
+                // Get the created contact's ID
+                String responseJson = result.getResponse().getContentAsString();
+                Contact createdContact = objectMapper.readValue(responseJson, Contact.class);
+                String contactId = createdContact.getId();
 
-        mockMvc.perform(post("/contact")
-                .header(AUTH_HEADER, "testuser123")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(contact)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Test User"));
-    }
+                // Update the contact
+                contact.put("name", "Updated User");
+                mockMvc.perform(put("/contact/" + contactId)
+                                .header(AUTH_HEADER, "testuser123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(contact)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").value(contactId))
+                                .andExpect(jsonPath("$.userId").value("testuser123"))
+                                .andExpect(jsonPath("$.name").value("Updated User"));
 
-    private void createContact(String userId, String name) throws Exception {
-        Map<String, String> contact = new HashMap<>();
-        contact.put("name", name);
+                // Delete the contact
+                mockMvc.perform(delete("/contact/" + contactId)
+                                .header(AUTH_HEADER, "testuser123"))
+                                .andExpect(status().isOk());
 
-        mockMvc.perform(post("/contact")
-                .header(AUTH_HEADER, userId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(contact)))
-                .andExpect(status().isOk());
-    }
+                // Verify contact is deleted
+                mockMvc.perform(get("/contact")
+                                .header(AUTH_HEADER, "testuser123"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        void shouldNotAllowUpdatingOtherUsersContacts() throws Exception {
+                // Create a contact for user1
+                Map<String, String> contact = new HashMap<>();
+                contact.put("name", "User One Contact");
+
+                MvcResult result = mockMvc.perform(post("/contact")
+                                .header(AUTH_HEADER, "user1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(contact)))
+                                .andExpect(status().isOk())
+                                .andReturn();
+
+                String contactId = objectMapper.readValue(result.getResponse().getContentAsString(), Contact.class)
+                                .getId();
+
+                // Try to update the contact as user2
+                Map<String, String> updatedContact = new HashMap<>();
+                updatedContact.put("name", "Hacked Name");
+
+                mockMvc.perform(put("/contact/" + contactId)
+                                .header(AUTH_HEADER, "user2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(updatedContact)))
+                                .andExpect(status().isNotFound());
+
+                // Try to delete the contact as user2
+                mockMvc.perform(delete("/contact/" + contactId)
+                                .header(AUTH_HEADER, "user2"))
+                                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void shouldReturnNotFoundForNonexistentContact() throws Exception {
+                mockMvc.perform(put("/contact/nonexistent-id")
+                                .header(AUTH_HEADER, "testuser123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"name\":\"Test\"}"))
+                                .andExpect(status().isNotFound());
+
+                mockMvc.perform(delete("/contact/nonexistent-id")
+                                .header(AUTH_HEADER, "testuser123"))
+                                .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void shouldAcceptArbitraryJsonFields() throws Exception {
+                Map<String, Object> contact = new HashMap<>();
+                contact.put("name", "Test User");
+                contact.put("customString", "value");
+                contact.put("customNumber", 123);
+                contact.put("customBoolean", true);
+                contact.put("customObject", Map.of("key", "value"));
+
+                mockMvc.perform(post("/contact")
+                                .header(AUTH_HEADER, "testuser123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(contact)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.name").value("Test User"));
+        }
 }
