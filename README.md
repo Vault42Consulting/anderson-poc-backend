@@ -33,6 +33,12 @@ mvn clean package
 mvn spring-boot:run
 ```
 
+Run with custom port:
+
+```bash
+SERVER_PORT=8888 mvn spring-boot:run
+```
+
 Run with Docker and Kafka:
 
 ```bash
