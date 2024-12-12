@@ -110,6 +110,22 @@ All contacts endpoints require the `X-Goog-Authenticated-User-Id` header. The va
 - `PUT /contact/{contactId}` - Update a specific contact
 - `DELETE /contact/{contactId}` - Delete a specific contact
 
+### Validation
+
+The API validates contact data:
+
+- Email must be in valid email format
+- Phone must be in North American format (e.g., 123-456-7890, (123) 456-7890)
+
+Invalid requests return 400 Bad Request with specific error messages:
+
+```json
+{
+  "email": "Invalid email format",
+  "phone": "Phone number must be in North American format (e.g., 123-456-7890)"
+}
+```
+
 Example contact creation:
 
 ```bash
@@ -119,7 +135,7 @@ curl -X POST http://localhost:8080/contact \
 -d '{
   "name": "John Smith",
   "email": "john@example.com",
-  "phone": "555-1234"
+  "phone": "123-456-7890"
 }'
 ```
 
@@ -131,7 +147,8 @@ curl -X PUT http://localhost:8080/contact/contact-id-here \
 -H "X-Goog-Authenticated-User-Id: user123" \
 -d '{
   "name": "John Smith Updated",
-  "email": "john.updated@example.com"
+  "email": "john.updated@example.com",
+  "phone": "(123) 456-7890"
 }'
 ```
 
