@@ -2,7 +2,6 @@ package com.anderson.demo.controller;
 
 import com.anderson.demo.model.Contact;
 import com.anderson.demo.repository.ContactRepository;
-import com.anderson.demo.service.ContactService;
 import com.anderson.demo.service.KafkaEventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,11 +13,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -33,9 +29,6 @@ class ContactControllerTest {
 
         @Autowired
         private ObjectMapper objectMapper;
-
-        @Autowired
-        private ContactService contactService;
 
         // Mock KafkaEventService so we don't need a real Kafka connection
         @MockBean
@@ -161,5 +154,32 @@ class ContactControllerTest {
                 mockMvc.perform(delete("/contact/nonexistent-id")
                                 .header(AUTH_HEADER, "testuser123"))
                                 .andExpect(status().isNotFound());
+        }
+
+        @Test
+        void shouldAcceptArbitraryJsonFields() throws Exception {
+                Map<String, Object> contact = new HashMap<>();
+                contact.put("name", "Test User");
+                contact.put("customString", "value");
+                contact.put("department", "Engineering");
+                contact.put("location", "Seattle");
+                contact.put("nickname", "Tester");
+
+                mockMvc.perform(post("/contact")
+                                .header(AUTH_HEADER, "testuser123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(contact)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.name").value("Test User"));
+
+                // Verify in database that custom fields were saved
+                mockMvc.perform(get("/contact")
+                                .header(AUTH_HEADER, "testuser123"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].name").value("Test User"))
+                                .andExpect(jsonPath("$[0].customString").value("value"))
+                                .andExpect(jsonPath("$[0].department").value("Engineering"))
+                                .andExpect(jsonPath("$[0].location").value("Seattle"))
+                                .andExpect(jsonPath("$[0].nickname").value("Tester"));
         }
 }
