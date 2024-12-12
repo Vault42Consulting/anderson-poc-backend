@@ -1,6 +1,8 @@
 package com.anderson.demo.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Email;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import java.util.HashMap;
@@ -16,14 +18,17 @@ public class Contact {
     private String userId;
 
     private String name;
+
+    @Email(message = "Invalid email format")
     private String email;
+
+    @Pattern(regexp = "^\\+?1?[-.]?\\(?([0-9]{3})\\)?[-.]?([0-9]{3})[-.]?([0-9]{4})$", message = "Phone number must be in North American format (e.g., 123-456-7890)")
     private String phone;
 
-    // For arbitrary fields
     @ElementCollection
     @CollectionTable(name = "contact_attributes", joinColumns = @JoinColumn(name = "contact_id"))
-    @MapKeyColumn(name = "attr_key") // Changed from "key" to "attr_key"
-    @Column(name = "attr_value") // Changed from "value" to "attr_value" for consistency
+    @MapKeyColumn(name = "attr_key")
+    @Column(name = "attr_value")
     private Map<String, String> additionalAttributes = new HashMap<>();
 
     // Existing getters and setters

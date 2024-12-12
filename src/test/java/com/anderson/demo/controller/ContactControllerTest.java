@@ -182,4 +182,41 @@ class ContactControllerTest {
                                 .andExpect(jsonPath("$[0].location").value("Seattle"))
                                 .andExpect(jsonPath("$[0].nickname").value("Tester"));
         }
+
+        @Test
+        void shouldRejectInvalidEmailAndPhone() throws Exception {
+                // Invalid email, invalid phone
+                Map<String, String> invalidContact = new HashMap<>();
+                invalidContact.put("name", "Test User");
+                invalidContact.put("email", "not-an-email");
+                invalidContact.put("phone", "123-123");
+
+                mockMvc.perform(post("/contact")
+                                .header(AUTH_HEADER, "testuser123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidContact)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.email").value("Invalid email format"))
+                                .andExpect(jsonPath("$.phone").value(
+                                                "Phone number must be in North American format (e.g., 123-456-7890)"));
+
+                // Valid email, invalid phone
+                invalidContact.put("email", "valid@email.com");
+                mockMvc.perform(post("/contact")
+                                .header(AUTH_HEADER, "testuser123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidContact)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.phone").value(
+                                                "Phone number must be in North American format (e.g., 123-456-7890)"))
+                                .andExpect(jsonPath("$.email").doesNotExist());
+
+                // Valid email, valid phone
+                invalidContact.put("phone", "123-456-7890");
+                mockMvc.perform(post("/contact")
+                                .header(AUTH_HEADER, "testuser123")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidContact)))
+                                .andExpect(status().isOk());
+        }
 }

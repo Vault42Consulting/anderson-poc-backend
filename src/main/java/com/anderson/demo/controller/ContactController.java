@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/contact")
 public class ContactController {
@@ -20,7 +22,7 @@ public class ContactController {
     @PostMapping
     public ResponseEntity<Contact> createContact(
             @RequestHeader(USER_HEADER) String userId,
-            @RequestBody Contact contact) {
+            @Valid @RequestBody Contact contact) {
         Contact savedContact = contactService.addContact(userId, contact);
         return ResponseEntity.ok(savedContact);
     }
@@ -36,7 +38,7 @@ public class ContactController {
     public ResponseEntity<Contact> updateContact(
             @RequestHeader(USER_HEADER) String userId,
             @PathVariable String contactId,
-            @RequestBody Contact contact) {
+            @Valid @RequestBody Contact contact) {
         return contactService.updateContact(userId, contactId, contact)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
