@@ -41,6 +41,50 @@ docker compose up -d
 The application will be available at http://localhost:8080
 Kafka UI will be available at http://localhost:8081
 
+## Docker Compose Details
+
+The application uses Docker Compose for local development with several services:
+
+### Services
+
+- `app` - The Spring Boot application
+- `postgres` - PostgreSQL database
+- `zookeeper` - Required for Kafka
+- `kafka` - Kafka broker
+- `kafka-init` - Creates required Kafka topics
+- `kafka-ui` - Web UI for Kafka monitoring
+
+### Startup Order
+
+Services start in the following order:
+
+1. PostgreSQL (with health check)
+2. Zookeeper
+3. Kafka
+4. Kafka initialization
+5. Application (waits for PostgreSQL and Kafka)
+
+### Persistence
+
+- PostgreSQL data is persisted in a named volume: `postgres_data`
+- To completely reset the database: `docker compose down -v`
+
+### Local Development
+
+```bash
+# Start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f app
+
+# Restart just the application
+docker compose restart app
+
+# Stop everything and remove volumes
+docker compose down -v
+```
+
 ## Testing
 
 Run the tests with:
