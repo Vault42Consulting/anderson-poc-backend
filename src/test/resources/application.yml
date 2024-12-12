@@ -1,19 +1,21 @@
+# src/test/resources/application.yml
 spring:
   datasource:
-    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/contacts}
-    username: ${POSTGRES_USER:postgres}
-    password: ${POSTGRES_PASSWORD:postgres}
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password: sa
+    driver-class-name: org.h2.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: create-drop
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
   flyway:
-    enabled: true
-    baseline-on-migrate: true
+    enabled: false
+
   kafka:
-    enabled: ${KAFKA_ENABLED:false}
+    enabled: false
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -22,7 +24,3 @@ spring:
 app:
   kafka:
     topic: ${KAFKA_TOPIC:contact-events}
-
-logging:
-  level:
-    org.flywaydb: DEBUG

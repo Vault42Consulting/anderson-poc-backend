@@ -1,6 +1,7 @@
 package com.anderson.demo.controller;
 
 import com.anderson.demo.model.Contact;
+import com.anderson.demo.repository.ContactRepository;
 import com.anderson.demo.service.ContactService;
 import com.anderson.demo.service.KafkaEventService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,17 +41,15 @@ class ContactControllerTest {
         @MockBean
         private KafkaEventService kafkaEventService;
 
+        @Autowired
+        private ContactRepository contactRepository;
+
         private static final String AUTH_HEADER = "X-Goog-Authenticated-User-Id";
 
         @BeforeEach
         void setUp() throws Exception {
-                // Clear contacts before each test
-                File file = new File("contacts.json");
-                if (file.exists()) {
-                        objectMapper.writeValue(file, new ArrayList<>());
-                }
-                // Reinitialize the service
-                contactService.init();
+                // Clear database between tests
+                contactRepository.deleteAll();
         }
 
         @Test
@@ -162,22 +161,5 @@ class ContactControllerTest {
                 mockMvc.perform(delete("/contact/nonexistent-id")
                                 .header(AUTH_HEADER, "testuser123"))
                                 .andExpect(status().isNotFound());
-        }
-
-        @Test
-        void shouldAcceptArbitraryJsonFields() throws Exception {
-                Map<String, Object> contact = new HashMap<>();
-                contact.put("name", "Test User");
-                contact.put("customString", "value");
-                contact.put("customNumber", 123);
-                contact.put("customBoolean", true);
-                contact.put("customObject", Map.of("key", "value"));
-
-                mockMvc.perform(post("/contact")
-                                .header(AUTH_HEADER, "testuser123")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(contact)))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.name").value("Test User"));
         }
 }

@@ -1,11 +1,11 @@
 # Anderson POC Spring Boot Demo Project
 
-Simple Spring Boot application that provides a basic contacts API with optional Kafka event publishing.
+Simple Spring Boot application that provides a basic contacts API with PostgreSQL persistence and optional Kafka event publishing.
 
 ## Prerequisites
 
 - [asdf](https://asdf-vm.com/) for version management
-- Docker and docker-compose for local development and Kafka integration
+- Docker and docker compose for local development
 - Java 21
 - Maven 3.9.6
 
@@ -26,23 +26,16 @@ asdf install
 
 ## Development
 
-Build and run the application without Kafka:
+Build the application:
 
 ```bash
 mvn clean package
-mvn spring-boot:run
 ```
 
-Run with custom port:
+Run with Docker (includes PostgreSQL and Kafka):
 
 ```bash
-SERVER_PORT=8888 mvn spring-boot:run
-```
-
-Run with Docker and Kafka:
-
-```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 The application will be available at http://localhost:8080
@@ -55,6 +48,8 @@ Run the tests with:
 ```bash
 mvn test
 ```
+
+Tests use an H2 in-memory database and don't require PostgreSQL or Kafka.
 
 ## API Endpoints
 
@@ -80,9 +75,7 @@ curl -X POST http://localhost:8080/contact \
 -d '{
   "name": "John Smith",
   "email": "john@example.com",
-  "phone": "555-1234",
-  "twitter": "@johnsmith",
-  "department": "Engineering"
+  "phone": "555-1234"
 }'
 ```
 
@@ -98,23 +91,51 @@ curl -X PUT http://localhost:8080/contact/contact-id-here \
 }'
 ```
 
+## Database Configuration
+
+The application uses PostgreSQL for persistence:
+
+- Database migrations are managed by Flyway
+- Migrations are automatically applied on startup
+- Default connection: localhost:5432/contacts
+- Default credentials: postgres/postgres
+
+To check the database:
+
+```bash
+# Connect to PostgreSQL
+docker compose exec postgres psql -U postgres -d contacts
+
+# List tables
+\dt
+
+# View contacts
+SELECT * FROM contacts;
+```
+
+Environment variables for database configuration:
+
+- `POSTGRES_URL` - Database URL (default: jdbc:postgresql://localhost:5432/contacts)
+- `POSTGRES_USER` - Database username (default: postgres)
+- `POSTGRES_PASSWORD` - Database password (default: postgres)
+
 ## Kafka Integration
 
 The application can optionally publish contact events (create/update/delete) to Kafka.
 
 ### Running with Kafka
 
-1. Start the environment with docker-compose:
+1. Start the environment with docker compose:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 2. View messages in Kafka UI:
    - Open http://localhost:8081
    - Navigate to Topics > contact-events
    - View messages in the Messages tab
-   - Check consumer logs: `docker-compose logs -f kafka-consumer`
+   - Check consumer logs: `docker compose logs -f kafka-consumer`
 
 ### Configuration
 
@@ -124,13 +145,11 @@ Kafka integration can be enabled/disabled via environment variables:
 - `KAFKA_BOOTSTRAP_SERVERS` - Kafka broker addresses
 - `KAFKA_TOPIC` - Topic for contact events
 
-Note: The contacts API accepts arbitrary JSON fields, making it flexible for different use cases. Currently, contacts are stored in a local JSON file (contacts.json) - this is a temporary solution for the POC phase and will be replaced with proper persistence in a future iteration. The file is ephemeral and resets when the Docker container restarts.
-
 ## Project Structure
 
 - `/src/main/java/com/anderson/demo` - Main application code
+- `/src/main/resources/db/migration` - Flyway database migrations
 - `/src/test/java/com/anderson/demo` - Test code
 - `Dockerfile` - Docker configuration
-- `docker-compose.yml` - Docker Compose configuration for local development with Kafka
+- `docker-compose.yml` - Docker Compose configuration for local development
 - `pom.xml` - Maven dependencies and build configuration
-- `contacts.json` - Temporary local storage for contacts (to be replaced with proper persistence)
