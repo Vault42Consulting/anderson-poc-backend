@@ -8,7 +8,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
 public class AuthenticationInterceptor implements HandlerInterceptor {
-    private static final String REQUIRED_HEADER = "X-Goog-Authenticated-User-Id";
+    private static final String REQUIRED_HEADER = "X-Backend-Service-UserId";
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {

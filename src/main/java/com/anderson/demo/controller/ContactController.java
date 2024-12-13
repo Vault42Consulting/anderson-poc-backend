@@ -12,7 +12,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/contact")
 public class ContactController {
-    private static final String USER_HEADER = "X-Goog-Authenticated-User-Id";
+    private static final String USER_HEADER = "X-Backend-Service-UserId";
     private final ContactService contactService;
 
     public ContactController(ContactService contactService) {

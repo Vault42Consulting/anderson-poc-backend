@@ -37,7 +37,7 @@ class ContactControllerTest {
         @Autowired
         private ContactRepository contactRepository;
 
-        private static final String AUTH_HEADER = "X-Goog-Authenticated-User-Id";
+        private static final String AUTH_HEADER = "X-Backend-Service-UserId";
 
         @BeforeEach
         void setUp() throws Exception {
