@@ -103,7 +103,7 @@ Tests use an H2 in-memory database and don't require PostgreSQL or Kafka.
 
 ### Contacts API
 
-All contacts endpoints require the `X-Goog-Authenticated-User-Id` header. The value of this header is used as the user identifier for storing and retrieving contacts.
+All contacts endpoints require the `X-Backend-Service-UserId` header. The value of this header is used as the user identifier for storing and retrieving contacts.
 
 - `POST /contact` - Create a contact
 - `GET /contact` - Get all contacts for the authenticated user
@@ -131,7 +131,7 @@ Example contact creation:
 ```bash
 curl -X POST http://localhost:8080/contact \
 -H "Content-Type: application/json" \
--H "X-Goog-Authenticated-User-Id: user123" \
+-H "X-Backend-Service-UserId: user123" \
 -d '{
   "name": "John Smith",
   "email": "john@example.com",
@@ -144,7 +144,7 @@ Example contact update:
 ```bash
 curl -X PUT http://localhost:8080/contact/contact-id-here \
 -H "Content-Type: application/json" \
--H "X-Goog-Authenticated-User-Id: user123" \
+-H "X-Backend-Service-UserId: user123" \
 -d '{
   "name": "John Smith Updated",
   "email": "john.updated@example.com",
